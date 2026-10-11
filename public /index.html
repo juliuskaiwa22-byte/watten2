@@ -1,0 +1,60 @@
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const cors = require('cors');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+// WATTEN Database Mock
+let users = {};
+const ADMIN_PHONE = "0795140634";
+// Socket.io Realtime Management
+io.on('connection', (socket) => {
+    console.log('A racer connected:', socket.id);
+
+        socket.on('join_platform', (phone) => {
+                if (!users[phone]) {
+                            users[phone] = {
+                                            phone,
+                                                            balanceEarn: 0,
+                                                                            balanceMain: 0,
+                                                                                            level: 'T0',
+                                                                                                            tasksCompletedToday: 0,
+                                                                                                                            lastTaskDate: new Date().toDateString(),
+                                                                                                                                            isAdmin: phone === ADMIN_PHONE,
+                                                                                                                                                            referrals: []
+                                                                                                                                                                        };
+                                                                                                                                                                                }
+                                                                                                                                                                                        socket.emit('user_data', users[phone]);
+                                                                                                                                                                                            });
+
+                                                                                                                                                                                                socket.on('complete_task', (phone) => {
+                                                                                                                                                                                                        let user = users[phone];
+                                                                                                                                                                                                                if (user) {
+                                                                                                                                                                                                                            let today = new Date().toDateString();
+                                                                                                                                                                                                                                        if (user.lastTaskDate !== today) {
+                                                                                                                                                                                                                                                        user.tasksCompletedToday = 0;
+                                                                                                                                                                                                                                                                        user.lastTaskDate = today;
+                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                if (user.tasksCompletedToday < 7) {
+                                                                                                                                                                                                                                                                                                                user.tasksCompletedToday++;
+                                                                                                                                                                                                                                                                                                                                user.balanceEarn += 500; // Reward per task
+                                                                                                                                                                                                                                                                                                                                                socket.emit('user_data', user);
+                                                                                                                                                                                                                                                                                                                                                            } else {
+                                                                                                                                                                                                                                                                                                                                                                            socket.emit('error_msg', 'Daily task quota reached (7/7)!');
+                                                                                                                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                    });
+                                                                                                                                                                                                                                                                                                                                                                                                    });
+
+                                                                                                                                                                                                                                                                                                                                                                                                    const PORT = process.env.PORT || 3000;
+                                                                                                                                                                                                                                                                                                                                                                                                    server.listen(PORT, () => {
+                                                                                                                                                                                                                                                                                                                                                                                                        console.log(`WATTEN Engine running on port ${PORT}`);
+                                                                                                                                                                                                                                                                                                                                                                                                        });
+                                                                                                                                                                                                                                                                                                                                                                                                        
